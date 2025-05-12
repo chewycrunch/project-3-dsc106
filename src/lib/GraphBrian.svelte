@@ -1,17 +1,11 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import * as d3 from 'd3';
 
   // Component props
-  const aspectRatio = 0.6; // Height will be 60% of width
-  export let width = Math.min(window.innerWidth * 0.75, 1700);
-  export let height = width * aspectRatio; // Calculate height based on width
-  export let margin = { 
-    top: 60,    // Increased for larger title
-    right: 80,  // Increased to prevent overlap with legend
-    bottom: 80, // Increased for larger axis labels
-    left: 80    // Increased for larger axis labels
-  };
+  export let width = 800;
+  export let height = 400;
+  export let margin = { top: 40, right: 60, bottom: 40, left: 60 };
 
   // Type definitions
   interface ProcessedDataPoint {
@@ -29,9 +23,6 @@
   let processedData: ProcessedDataPoint[] = [];
   let useFahrenheit = false;
   let dataType: DataType = 'female';
-
-  let resizeObserver: ResizeObserver;
-  let svgContainer: HTMLDivElement;
 
   // Temperature conversion functions
   function toFahrenheit(celsius: number): number {
@@ -201,9 +192,7 @@
       .attr('d', line);
 
     // Add axes
-    const xAxis = d3.axisBottom(xScale)
-      .tickSize(6)
-      .tickPadding(8);
+    const xAxis = d3.axisBottom(xScale);
     
     // Create y-axis with appropriate ticks
     let yAxis;
@@ -223,10 +212,9 @@
       .call(xAxis)
       .append('text')
       .attr('x', innerWidth / 2)
-      .attr('y', 45)
+      .attr('y', 35)
       .attr('fill', 'currentColor')
       .attr('text-anchor', 'middle')
-      .style('font-size', '18px')
       .text('Time (Days)');
 
     g.append('g')
@@ -234,23 +222,17 @@
       .append('text')
       .attr('transform', 'rotate(-90)')
       .attr('x', -innerHeight / 2)
-      .attr('y', -50)
+      .attr('y', -40)
       .attr('fill', 'currentColor')
       .attr('text-anchor', 'middle')
-      .style('font-size', '18px')
       .text(`Temperature (${getTempUnit()})`);
 
-    // Style the axis ticks
-    g.selectAll('.tick text')
-      .style('font-size', '14px');
-
-    // Add title with larger font
+    // Add title
     g.append('text')
       .attr('x', innerWidth / 2)
-      .attr('y', -20)
+      .attr('y', -10)
       .attr('text-anchor', 'middle')
-      .style('font-size', '24px')
-      .style('font-weight', 'bold')
+      .style('font-size', '16px')
       .text('Average Core Body Temperature Over 14 Days (Female Mice)');
 
     // Add tooltip
@@ -258,13 +240,11 @@
       .append('div')
       .style('position', 'absolute')
       .style('background-color', 'white')
-      .style('padding', '10px')
+      .style('padding', '5px')
       .style('border', '1px solid #ddd')
-      .style('border-radius', '4px')
+      .style('border-radius', '3px')
       .style('pointer-events', 'none')
-      .style('opacity', 0)
-      .style('font-size', '14px')
-      .style('box-shadow', '0 2px 4px rgba(0,0,0,0.1)');
+      .style('opacity', 0);
 
     // Add interactive dots
     g.selectAll('.dot')
@@ -310,33 +290,8 @@
       });
   }
 
-  // Handle resize
-  function handleResize(entries: ResizeObserverEntry[]) {
-    for (const entry of entries) {
-      if (svg) {
-        // Update width based on viewport
-        width = Math.min(window.innerWidth * 0.75, 1700);
-        // Update height based on width ratio
-        height = width * aspectRatio;
-        createVisualization();
-      }
-    }
-  }
-
   onMount(async () => {
     await loadAndProcessData();
-    
-    // Set up resize observer
-    resizeObserver = new ResizeObserver(handleResize);
-    if (svgContainer) {
-      resizeObserver.observe(svgContainer);
-    }
-  });
-
-  onDestroy(() => {
-    if (resizeObserver) {
-      resizeObserver.disconnect();
-    }
   });
 </script>
 
@@ -356,9 +311,7 @@
         <option value="both">All Mice</option>
       </select>
     </div>
-    <div class="svg-container" bind:this={svgContainer}>
-      <svg bind:this={svg}></svg>
-    </div>
+    <svg bind:this={svg}></svg>
   </div>
   <div class="legend">
     <h3>Legend</h3>
@@ -385,59 +338,41 @@
 
 <style>
   .graph-container {
-    width: 75vw;
-    max-width: 1700px;
+    width: 100%;
+    max-width: 1000px;
     margin: 0 auto;
     position: relative;
     display: flex;
-    gap: 40px;
-    padding: 20px;
-    align-items: center;
-    justify-content: center;
+    gap: 20px;
   }
 
   .main-content {
-    flex: 0 1 auto;
+    flex: 1;
     position: relative;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    aspect-ratio: 1/0.6; /* Match the width/height ratio */
   }
-
-  .svg-container {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    overflow: visible;
-    display: flex;
-    align-items: center;
-  }
-
+  
   svg {
     width: 100%;
-    height: 100%;
-    overflow: visible;
+    height: auto;
   }
 
   .controls {
     position: absolute;
-    top: 20px;
-    right: 20px;
+    top: 10px;
+    right: 10px;
     display: flex;
-    gap: 12px;
+    gap: 10px;
     z-index: 1;
   }
 
   .temp-toggle {
-    padding: 8px 16px;
+    padding: 5px 10px;
     background-color: #1f77b4;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 12px;
   }
 
   .temp-toggle:hover {
@@ -445,14 +380,13 @@
   }
 
   .data-type-select {
-    padding: 8px 16px;
+    padding: 5px 10px;
     background-color: white;
     border: 1px solid #1f77b4;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 12px;
     color: #1f77b4;
-    font-weight: 500;
   }
 
   .data-type-select:hover {
@@ -460,76 +394,40 @@
   }
 
   .legend {
-    flex: 0 0 240px;
-    height: 100%;
-    aspect-ratio: 1/0.6; /* Match the graph's aspect ratio */
-    padding: 25px;
+    width: 200px;
+    padding: 20px;
     background-color: #f8f9fa;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
   }
 
   .legend h3 {
-    margin: 0 0 20px 0;
-    font-size: 20px;
+    margin: 0 0 15px 0;
+    font-size: 16px;
     color: #333;
-    font-weight: bold;
-    text-align: center; /* Center the legend title */
   }
 
   .legend-items {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    justify-content: center; /* Center items vertically */
-    flex: 1; /* Take up remaining space */
+    gap: 12px;
   }
 
   .legend-item {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
 
   .legend-color {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border-radius: 4px;
     border: 1px solid #ddd;
   }
 
   .legend-item span {
-    font-size: 16px;
+    font-size: 14px;
     color: #555;
-  }
-
-  @media (max-width: 768px) {
-    .graph-container {
-      width: 95vw;
-      flex-direction: column;
-      gap: 20px;
-      padding: 10px;
-      align-items: stretch;
-    }
-
-    .main-content {
-      width: 100%;
-      aspect-ratio: 1/0.6; /* Maintain aspect ratio on mobile */
-    }
-
-    .legend {
-      width: 100%;
-      height: auto;
-      aspect-ratio: auto; /* Allow flexible height on mobile */
-      position: relative;
-      top: 0;
-    }
-
-    .legend-items {
-      justify-content: flex-start; /* Align items to top on mobile */
-    }
   }
 </style>
