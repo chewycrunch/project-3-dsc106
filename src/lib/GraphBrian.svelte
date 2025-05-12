@@ -23,6 +23,8 @@
   let processedData: ProcessedDataPoint[] = [];
   let useFahrenheit = false;
   let dataType: DataType = 'female';
+  let showEstrus = true;  // New state variable for estrus toggle
+  let zoom: d3.ZoomBehavior<SVGElement, unknown>;
 
   // Temperature conversion functions
   function toFahrenheit(celsius: number): number {
@@ -117,6 +119,10 @@
   // Update data type and reload
   function updateDataType(newType: DataType) {
     dataType = newType;
+    // Reset estrus toggle when switching to male or both
+    if (newType !== 'female') {
+      showEstrus = false;
+    }
     loadAndProcessData();
   }
 
@@ -138,6 +144,14 @@
       .domain(getYDomain())
       .range([innerHeight, 0]);
 
+    // Create tick values for y-axis
+    const domain = getYDomain();
+    const tickCount = 6; // Number of ticks including boundaries
+    const step = (domain[1] - domain[0]) / (tickCount - 1);
+    const tickValues = Array.from({ length: tickCount }, (_, i) => 
+      +(domain[0] + (step * i)).toFixed(1)
+    );
+
     // Create SVG group
     const g = d3.select(svg)
       .attr('width', width)
@@ -145,10 +159,29 @@
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Add light/dark period shading first (bottom layer)
+    // Define clip path that matches the axis lines
+    g.append('defs')
+      .append('clipPath')
+      .attr('id', 'chart-area')
+      .append('rect')
+      .attr('x', -1)
+      .attr('y', -1)
+      .attr('width', innerWidth + 2)
+      .attr('height', innerHeight + 2);
+
+    // Create a group for all visualization elements with clip path
+    const vizGroup = g.append('g')
+      .attr('class', 'visualization')
+      .attr('clip-path', 'url(#chart-area)');
+
+    // Create background group for light/dark periods
+    const bgGroup = vizGroup.append('g')
+      .attr('class', 'background');
+
+    // Add light/dark period shading
     for (let day = 0; day < 14; day++) {
       // Dark period (gray)
-      g.append('rect')
+      bgGroup.append('rect')
         .attr('x', xScale(day))
         .attr('y', 0)
         .attr('width', xScale(day + 0.5) - xScale(day))
@@ -157,7 +190,7 @@
         .attr('opacity', 0.1);
 
       // Light period (yellow)
-      g.append('rect')
+      bgGroup.append('rect')
         .attr('x', xScale(day + 0.5))
         .attr('y', 0)
         .attr('width', xScale(day + 1) - xScale(day + 0.5))
@@ -166,17 +199,21 @@
         .attr('opacity', 0.1);
     }
 
-    // Add estrus day highlighting on top (top layer)
-    [2, 6, 10].forEach(day => {
-      g.append('rect')
-        .attr('x', xScale(day))
-        .attr('y', 0)
-        .attr('width', xScale(day + 1) - xScale(day))
-        .attr('height', innerHeight)
-        .attr('fill', 'red')
-        .attr('opacity', 0.2)
-        .raise(); // Ensure this rectangle is on top
-    });
+    // Add estrus day highlighting only if enabled and female mice selected
+    if (showEstrus && dataType === 'female') {
+      const estrusGroup = vizGroup.append('g')
+        .attr('class', 'estrus');
+
+      [2, 6, 10].forEach(day => {
+        estrusGroup.append('rect')
+          .attr('x', xScale(day))
+          .attr('y', 0)
+          .attr('width', xScale(day + 1) - xScale(day))
+          .attr('height', innerHeight)
+          .attr('fill', 'red')
+          .attr('opacity', 0.2);
+      });
+    }
 
     // Create line generator with proper typing
     const line = d3.line<ProcessedDataPoint>()
@@ -185,51 +222,16 @@
       .curve(d3.curveMonotoneX);
 
     // Add the temperature line
-    g.append('path')
+    vizGroup.append('path')
       .datum(processedData)
       .attr('fill', 'none')
       .attr('stroke', '#1f77b4')
       .attr('stroke-width', 1.5)
       .attr('d', line);
 
-    // Add axes
-    const xAxis = d3.axisBottom(xScale);
-    
-    // Create y-axis with appropriate ticks
-    let yAxis;
-    const domain = getYDomain();
-    const tickCount = 6; // Number of ticks including boundaries
-    const step = (domain[1] - domain[0]) / (tickCount - 1);
-    const tickValues = Array.from({ length: tickCount }, (_, i) => 
-      +(domain[0] + (step * i)).toFixed(1)
-    );
-    
-    yAxis = d3.axisLeft(yScale)
-      .tickValues(tickValues)
-      .tickFormat(d => d.toString());
-
-    g.append('g')
-      .attr('transform', `translate(0,${innerHeight})`)
-      .call(xAxis)
-      .append('text')
-      .attr('x', innerWidth / 2)
-      .attr('y', 35)
-      .attr('fill', 'currentColor')
-      .attr('text-anchor', 'middle')
-      .text('Time (Days)');
-
-    g.append('g')
-      .call(yAxis)
-      .append('text')
-      .attr('transform', 'rotate(-90)')
-      .attr('x', -innerHeight / 2)
-      .attr('y', -40)
-      .attr('fill', 'currentColor')
-      .attr('text-anchor', 'middle')
-      .text(`Temperature (${getTempUnit()})`);
-
-    // Add title
+    // Add title (outside of vizGroup)
     g.append('text')
+      .attr('class', 'title')
       .attr('x', innerWidth / 2)
       .attr('y', -10)
       .attr('text-anchor', 'middle')
@@ -248,7 +250,7 @@
       .style('opacity', 0);
 
     // Add interactive dots
-    g.selectAll('.dot')
+    vizGroup.selectAll('.dot')
       .data(processedData)
       .enter()
       .append('circle')
@@ -274,8 +276,8 @@
         tooltip.html(
           `Day ${day} - ${hour}:${minute.toString().padStart(2, '0')}<br/>
            Temperature: ${getDisplayTemp(d.avgTemp).toFixed(2)}${getTempUnit()}<br/>
-           Period: ${!d.light ? 'Lights On' : 'Lights Off'}<br/>
-           Estrus: ${d.estrus ? 'Yes' : 'No'}`
+           Period: ${!d.light ? 'Lights On' : 'Lights Off'}`
+          + (dataType === 'female' ? `<br/>Estrus: ${d.estrus ? 'Yes' : 'No'}` : '')
         )
           .style('left', (event.pageX + 10) + 'px')
           .style('top', (event.pageY - 28) + 'px');
@@ -289,6 +291,84 @@
           .duration(500)
           .style('opacity', 0);
       });
+
+    // Set up zoom behavior
+    zoom = d3.zoom<SVGElement, unknown>()
+      .scaleExtent([1, 10])
+      .on('zoom', (event) => {
+        // Update the visualization group transform
+        vizGroup.attr('transform', event.transform);
+
+        // Create new scales based on the zoom transform
+        const newXScale = event.transform.rescaleX(xScale);
+        const newYScale = event.transform.rescaleY(yScale);
+
+        // Update the axes with new scales
+        xAxisGroup.call(d3.axisBottom(newXScale));
+        yAxisGroup.call(d3.axisLeft(newYScale)
+          .tickValues(tickValues)
+          .tickFormat(d => d.toString()));
+
+        // Update the dots positions
+        vizGroup.selectAll('.dot')
+          .attr('cx', function(d) {
+            const data = d as ProcessedDataPoint;
+            return newXScale(data.day);
+          })
+          .attr('cy', function(d) {
+            const data = d as ProcessedDataPoint;
+            return newYScale(getDisplayTemp(data.avgTemp));
+          });
+
+        // Update the line
+        const newLine = d3.line<ProcessedDataPoint>()
+          .x(d => newXScale(d.day))
+          .y(d => newYScale(getDisplayTemp(d.avgTemp)))
+          .curve(d3.curveMonotoneX);
+
+        vizGroup.select('path')
+          .datum(processedData)
+          .attr('d', newLine);
+      });
+
+    d3.select(svg)
+      .call(zoom)
+      .on('dblclick.zoom', null); // Disable double-click zoom
+
+    // Now create axis groups LAST so they are drawn on top
+    const xAxisGroup = g.append('g')
+      .attr('class', 'x-axis')
+      .attr('transform', `translate(0,${innerHeight})`);
+
+    const yAxisGroup = g.append('g')
+      .attr('class', 'y-axis');
+
+    // Initial axis rendering
+    xAxisGroup.call(d3.axisBottom(xScale))
+      .append('text')
+      .attr('x', innerWidth / 2)
+      .attr('y', 35)
+      .attr('fill', 'currentColor')
+      .attr('text-anchor', 'middle')
+      .text('Time (Days)');
+
+    yAxisGroup.call(d3.axisLeft(yScale)
+      .tickValues(tickValues)
+      .tickFormat(d => d.toString()))
+      .append('text')
+      .attr('transform', 'rotate(-90)')
+      .attr('x', -innerHeight / 2)
+      .attr('y', -40)
+      .attr('fill', 'currentColor')
+      .attr('text-anchor', 'middle')
+      .text(`Temperature (${getTempUnit()})`);
+  }
+
+  function resetZoom() {
+    d3.select(svg)
+      .transition()
+      .duration(750)
+      .call(zoom.transform, d3.zoomIdentity);
   }
 
   onMount(async () => {
@@ -315,10 +395,12 @@
         <div class="legend-color" style="background-color: yellow; opacity: 0.1;"></div>
         <span>Lights On</span>
       </div>
-      <div class="legend-item">
-        <div class="legend-color" style="background-color: red; opacity: 0.2;"></div>
-        <span>Estrus</span>
-      </div>
+      {#if dataType === 'female'}
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: red; opacity: 0.2;"></div>
+          <span>Estrus</span>
+        </div>
+      {/if}
     </div>
     <div class="controls">
       <button class="temp-toggle" on:click={toggleTempUnit}>
@@ -333,6 +415,21 @@
         <option value="male">Male Mice</option>
         <option value="both">All Mice</option>
       </select>
+      <button 
+        class="estrus-toggle" 
+        class:disabled={dataType !== 'female'}
+        on:click={() => {
+          if (dataType === 'female') {
+            showEstrus = !showEstrus;
+            createVisualization();
+          }
+        }}
+      >
+        {showEstrus ? 'Hide' : 'Show'} Estrus Period
+      </button>
+      <button class="reset-zoom" on:click={resetZoom}>
+        Reset View
+      </button>
     </div>
   </div>
 </div>
@@ -355,6 +452,11 @@
   svg {
     width: 100%;
     height: auto;
+    cursor: grab;
+  }
+
+  svg:active {
+    cursor: grabbing;
   }
 
   .controls {
@@ -430,5 +532,42 @@
   .legend-item span {
     font-size: 14px;
     color: #555;
+  }
+
+  .estrus-toggle {
+    padding: 8px 12px;
+    background-color: #1f77b4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    width: 100%;
+  }
+
+  .estrus-toggle:hover:not(.disabled) {
+    background-color: #1668a1;
+  }
+
+  .estrus-toggle.disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .reset-zoom {
+    padding: 8px 12px;
+    background-color: #1f77b4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .reset-zoom:hover {
+    background-color: #1668a1;
   }
 </style>
