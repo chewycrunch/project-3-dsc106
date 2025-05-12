@@ -22,25 +22,11 @@ and Celsius. Users can also pan/zoom anywhere on the plot for a closer look.
 <GraphBrian></GraphBrian>
 
 <p class="text-justify my-6 leading-relaxed">
-We opted for solid light/dark bands to make the 12-hour on/off cycle immediately legible (a blue-black 
-gradient proved too subtle), overlaid semi-opaque red rectangles for estrus so users can instantly see 
-how activity and temperature shift during those periods (and hide that control for males or "Both" to 
-avoid dead-end toggles), and an explicit °F/°C switch that not only relabels the axis but dynamically 
-rescales tick intervals (dual axes were too cluttered). Free-form pan/zoom lets users dive into any 
-anomaly, while the draggable range selector provides quick "overview + detail" highlighting of min/max 
-values. Together, these encodings and interactions balance clarity and flexibility, letting users 
-fluidly explore circadian rhythms without visual overload.
+We chose solid light/dark bands to make the 12-hour on/off cycle immediately legible (a blue-black gradient proved too subtle), overlaid semi-opaque red rectangles for estrus so users can instantly see how activity and temperature shift during those periods (and hide that control for males or “Both” to avoid dead-end toggles), and an explicit °F/°C switch that not only relabels the axis but dynamically rescales tick intervals. Free-form pan/zoom lets users dive into any anomaly, while the draggable range selector provides quick “overview + detail” highlighting of min/max values. Together, these encodings and interactions balance clarity and flexibility, letting users fluidly explore circadian rhythms without visual overload.
 </p>
 
 <p class="text-justify my-6 leading-relaxed">
-Our two-week development unfolded in a single GitHub repository. We kicked off with a group brainstorming 
-session, then distributed tasks among the four of us: Brian implemented the D3 map of light/dark intervals, 
-created the temperature-unit toggle and axis rescaling, Aathi built the gender and estrus filters, created 
-the time-range selector and pan/zoom behavior. David and Derek fixed the styling and added the write up 
-for the whole project. In total, we logged roughly 16 person-hours (about four each). Integrating the 
-zoom and drag behaviors in D3 proved the biggest time sink—it took nearly two hours to nail smooth 
-interactions without layout jank. Once those were stable, integrating the remaining controls and polishing 
-the color scheme fell into place quickly.
+Our two-week development is included in a single GitHub repository. We started off with a group brainstorming session, then distributed tasks among the four of us: Brian implemented the D3 map of light/dark intervals, created the temperature-unit toggle and axis rescaling, Aathi built the gender and estrus filters, created the time-range selector and pan/zoom behavior. David and Derek fixed the styling and added the write up for the whole project. In total, we logged roughly 16 person-hours (about four each). Integrating the zoom and drag behaviors in D3 proved the biggest time sink—it took nearly two hours to nail smooth interactions without layout jank. Once those were stable, integrating the remaining controls and polishing the color scheme fell into place quickly.
 </p>
 
 
