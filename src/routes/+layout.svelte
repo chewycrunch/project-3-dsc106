@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Container from '$lib/Container.svelte';
-	import Header from '$lib/Header.svelte';
 	import '../app.css';
 	import '../scroll.css';
 
@@ -13,7 +12,6 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 </svelte:head>
 
-<Header />
 <main>
 	<Container>
 		<div class="flex flex-col gap-x-2.5">
