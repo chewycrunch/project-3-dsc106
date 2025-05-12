@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Header from '$lib/Header.svelte';
+	import Container from '$lib/Container.svelte';
 	import '../app.css';
 	import '../scroll.css';
 
@@ -12,7 +12,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 </svelte:head>
 
-<Header />
 <main>
-	{@render children()}
+	<Container>
+		{@render children()}
+	</Container>
 </main>
