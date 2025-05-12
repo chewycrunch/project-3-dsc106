@@ -5,7 +5,7 @@
   // Component props
   export let width = 800;
   export let height = 400;
-  export let margin = { top: 40, right: 60, bottom: 40, left: 60 };
+  export let margin = { top: 60, right: 80, bottom: 60, left: 80 };
 
   // Type definitions
   interface ProcessedDataPoint {
@@ -23,8 +23,9 @@
   let processedData: ProcessedDataPoint[] = [];
   let useFahrenheit = false;
   let dataType: DataType = 'female';
-  let showEstrus = true;  // New state variable for estrus toggle
-  let zoom: d3.ZoomBehavior<SVGElement, unknown>;
+  let showEstrus = true;
+  let selectedData: ProcessedDataPoint[] = [];
+  let isBrushed = false;
 
   // Temperature conversion functions
   function toFahrenheit(celsius: number): number {
@@ -55,6 +56,8 @@
   // Toggle temperature unit
   function toggleTempUnit() {
     useFahrenheit = !useFahrenheit;
+    isBrushed = false;
+    selectedData = [];
     createVisualization();
   }
 
@@ -116,16 +119,6 @@
     createVisualization();
   }
 
-  // Update data type and reload
-  function updateDataType(newType: DataType) {
-    dataType = newType;
-    // Reset estrus toggle when switching to male or both
-    if (newType !== 'female') {
-      showEstrus = false;
-    }
-    loadAndProcessData();
-  }
-
   function createVisualization() {
     if (!processedData.length) return;
 
@@ -156,26 +149,13 @@
     const g = d3.select(svg)
       .attr('width', width)
       .attr('height', height)
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('preserveAspectRatio', 'xMidYMid meet')
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Define clip path that matches the axis lines
-    g.append('defs')
-      .append('clipPath')
-      .attr('id', 'chart-area')
-      .append('rect')
-      .attr('x', -1)
-      .attr('y', -1)
-      .attr('width', innerWidth + 2)
-      .attr('height', innerHeight + 2);
-
-    // Create a group for all visualization elements with clip path
-    const vizGroup = g.append('g')
-      .attr('class', 'visualization')
-      .attr('clip-path', 'url(#chart-area)');
-
     // Create background group for light/dark periods
-    const bgGroup = vizGroup.append('g')
+    const bgGroup = g.append('g')
       .attr('class', 'background');
 
     // Add light/dark period shading
@@ -201,7 +181,7 @@
 
     // Add estrus day highlighting only if enabled and female mice selected
     if (showEstrus && dataType === 'female') {
-      const estrusGroup = vizGroup.append('g')
+      const estrusGroup = g.append('g')
         .attr('class', 'estrus');
 
       [2, 6, 10].forEach(day => {
@@ -222,18 +202,46 @@
       .curve(d3.curveMonotoneX);
 
     // Add the temperature line
-    vizGroup.append('path')
-      .datum(processedData)
+    g.append('path')
+      .datum(isBrushed ? selectedData : processedData)
       .attr('fill', 'none')
       .attr('stroke', '#1f77b4')
       .attr('stroke-width', 1.5)
       .attr('d', line);
 
-    // Add title (outside of vizGroup)
+    // Add axes
+    const xAxis = d3.axisBottom(xScale);
+    const yAxis = d3.axisLeft(yScale)
+      .tickValues(tickValues)
+      .tickFormat(d => d.toString());
+
+    // Add x-axis
+    g.append('g')
+      .attr('transform', `translate(0,${innerHeight})`)
+      .call(xAxis)
+      .append('text')
+      .attr('x', innerWidth / 2)
+      .attr('y', 45)
+      .attr('fill', 'currentColor')
+      .attr('text-anchor', 'middle')
+      .text('Time (Days)');
+
+    // Add y-axis
+    g.append('g')
+      .call(yAxis)
+      .append('text')
+      .attr('transform', 'rotate(-90)')
+      .attr('x', -innerHeight / 2)
+      .attr('y', -60)
+      .attr('fill', 'currentColor')
+      .attr('text-anchor', 'middle')
+      .text(`Temperature (${getTempUnit()})`);
+
+    // Add title
     g.append('text')
       .attr('class', 'title')
       .attr('x', innerWidth / 2)
-      .attr('y', -10)
+      .attr('y', -20)
       .attr('text-anchor', 'middle')
       .style('font-size', '16px')
       .text('Average Core Body Temperature Over 14 Days (Female Mice)');
@@ -250,8 +258,8 @@
       .style('opacity', 0);
 
     // Add interactive dots
-    vizGroup.selectAll('.dot')
-      .data(processedData)
+    g.selectAll('.dot')
+      .data(isBrushed ? selectedData : processedData)
       .enter()
       .append('circle')
       .attr('class', 'dot')
@@ -292,87 +300,81 @@
           .style('opacity', 0);
       });
 
-    // Set up zoom behavior
-    zoom = d3.zoom<SVGElement, unknown>()
-      .scaleExtent([1, 10])
-      .on('zoom', (event) => {
-        // Update the visualization group transform
-        vizGroup.attr('transform', event.transform);
-
-        // Create new scales based on the zoom transform
-        const newXScale = event.transform.rescaleX(xScale);
-        const newYScale = event.transform.rescaleY(yScale);
-
-        // Update the axes with new scales
-        xAxisGroup.call(d3.axisBottom(newXScale));
-        yAxisGroup.call(d3.axisLeft(newYScale)
-          .tickValues(tickValues)
-          .tickFormat(d => d.toString()));
-
-        // Update the dots positions
-        vizGroup.selectAll('.dot')
-          .attr('cx', function(d) {
-            const data = d as ProcessedDataPoint;
-            return newXScale(data.day);
-          })
-          .attr('cy', function(d) {
-            const data = d as ProcessedDataPoint;
-            return newYScale(getDisplayTemp(data.avgTemp));
+    // Add brush
+    const brush = d3.brush()
+      .extent([[0, 0], [innerWidth, innerHeight]])
+      .on('end', (event) => {
+        if (!event.selection) {
+          isBrushed = false;
+          selectedData = [];
+        } else {
+          const [[x0, y0], [x1, y1]] = event.selection;
+          selectedData = processedData.filter(d => {
+            const x = xScale(d.day);
+            const y = yScale(getDisplayTemp(d.avgTemp));
+            return x >= x0 && x <= x1 && y >= y0 && y <= y1;
           });
-
-        // Update the line
-        const newLine = d3.line<ProcessedDataPoint>()
-          .x(d => newXScale(d.day))
-          .y(d => newYScale(getDisplayTemp(d.avgTemp)))
-          .curve(d3.curveMonotoneX);
-
-        vizGroup.select('path')
-          .datum(processedData)
-          .attr('d', newLine);
+          isBrushed = true;
+        }
+        createVisualization();
       });
 
-    d3.select(svg)
-      .call(zoom)
-      .on('dblclick.zoom', null); // Disable double-click zoom
-
-    // Now create axis groups LAST so they are drawn on top
-    const xAxisGroup = g.append('g')
-      .attr('class', 'x-axis')
-      .attr('transform', `translate(0,${innerHeight})`);
-
-    const yAxisGroup = g.append('g')
-      .attr('class', 'y-axis');
-
-    // Initial axis rendering
-    xAxisGroup.call(d3.axisBottom(xScale))
-      .append('text')
-      .attr('x', innerWidth / 2)
-      .attr('y', 35)
-      .attr('fill', 'currentColor')
-      .attr('text-anchor', 'middle')
-      .text('Time (Days)');
-
-    yAxisGroup.call(d3.axisLeft(yScale)
-      .tickValues(tickValues)
-      .tickFormat(d => d.toString()))
-      .append('text')
-      .attr('transform', 'rotate(-90)')
-      .attr('x', -innerHeight / 2)
-      .attr('y', -40)
-      .attr('fill', 'currentColor')
-      .attr('text-anchor', 'middle')
-      .text(`Temperature (${getTempUnit()})`);
+    g.append('g')
+      .attr('class', 'brush')
+      .call(brush);
   }
 
-  function resetZoom() {
-    d3.select(svg)
-      .transition()
-      .duration(750)
-      .call(zoom.transform, d3.zoomIdentity);
+  function resetBrush() {
+    isBrushed = false;
+    selectedData = [];
+    createVisualization();
   }
 
-  onMount(async () => {
-    await loadAndProcessData();
+  // Update data type and reload
+  function updateDataType(newType: DataType) {
+    dataType = newType;
+    // Reset estrus toggle when switching to male or both
+    if (newType !== 'female') {
+      showEstrus = false;
+    }
+    isBrushed = false;
+    selectedData = [];
+    loadAndProcessData();
+  }
+
+  onMount(() => {
+    // Set initial dimensions based on window size
+    const updateDimensions = () => {
+      const containerWidth = window.innerWidth * 0.8; // 80% of window width
+      width = Math.min(containerWidth, 1200); // Cap maximum width
+      height = width * 0.5; // Maintain 2:1 aspect ratio
+      
+      // Ensure minimum height for readability
+      height = Math.max(height, 400);
+      // Cap maximum height
+      height = Math.min(height, 800);
+      
+      createVisualization();
+    };
+
+    // Initial size
+    updateDimensions();
+
+    // Update on window resize with debounce
+    let resizeTimeout: number;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = window.setTimeout(updateDimensions, 250);
+    });
+
+    // Load data
+    loadAndProcessData();
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', updateDimensions);
+      clearTimeout(resizeTimeout);
+    };
   });
 </script>
 
@@ -421,14 +423,20 @@
         on:click={() => {
           if (dataType === 'female') {
             showEstrus = !showEstrus;
+            isBrushed = false;
+            selectedData = [];
             createVisualization();
           }
         }}
       >
         {showEstrus ? 'Hide' : 'Show'} Estrus Period
       </button>
-      <button class="reset-zoom" on:click={resetZoom}>
-        Reset View
+      <button 
+        class="reset-brush" 
+        class:disabled={!isBrushed}
+        on:click={resetBrush}
+      >
+        Reset Selection
       </button>
     </div>
   </div>
@@ -437,26 +445,26 @@
 <style>
   .graph-container {
     width: 100%;
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
     position: relative;
     display: flex;
     gap: 20px;
+    padding: 20px;
   }
 
   .main-content {
     flex: 1;
     position: relative;
+    min-width: 0;
+    aspect-ratio: 2/1;
   }
   
   svg {
     width: 100%;
-    height: auto;
-    cursor: grab;
-  }
-
-  svg:active {
-    cursor: grabbing;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
   }
 
   .controls {
@@ -494,6 +502,48 @@
 
   .data-type-select:hover {
     background-color: #f5f5f5;
+  }
+
+  .estrus-toggle {
+    padding: 8px 12px;
+    background-color: #1f77b4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    width: 100%;
+  }
+
+  .estrus-toggle:hover:not(.disabled) {
+    background-color: #1668a1;
+  }
+
+  .estrus-toggle.disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .reset-brush {
+    padding: 8px 12px;
+    background-color: #1f77b4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    width: 100%;
+  }
+
+  .reset-brush:hover:not(.disabled) {
+    background-color: #1668a1;
+  }
+
+  .reset-brush.disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 
   .legend {
@@ -534,40 +584,10 @@
     color: #555;
   }
 
-  .estrus-toggle {
-    padding: 8px 12px;
-    background-color: #1f77b4;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    width: 100%;
-  }
-
-  .estrus-toggle:hover:not(.disabled) {
-    background-color: #1668a1;
-  }
-
-  .estrus-toggle.disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
-
-  .reset-zoom {
-    padding: 8px 12px;
-    background-color: #1f77b4;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    width: 100%;
-    margin-top: 10px;
-  }
-
-  .reset-zoom:hover {
-    background-color: #1668a1;
+  :global(.brush .selection) {
+    fill: #1f77b4;
+    fill-opacity: 0.1;
+    stroke: #1f77b4;
+    stroke-width: 1px;
   }
 </style>
