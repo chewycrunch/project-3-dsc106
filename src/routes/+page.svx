@@ -1,0 +1,33 @@
+<script lang="ts">
+	import * as d3 from 'd3';
+	import GraphBrian from '$lib/GraphBrian.svelte';
+</script>
+
+<!-- Title -->
+<div class="flex flex-col gap-x-2.5 mt-20">
+<h1>Mouse Data; A Better Title Here</h1>
+<h2>A cool insight of TBD</h2>
+<h3>Brian Can, David Chew, Derek Kuang, Aathi Muthu</h3>
+</div>
+
+### Writeup above
+
+<GraphBrian></GraphBrian>
+
+### Writeup below
+
+
+<style scoped>
+	@reference '$lib/../app.css';
+	h1 {
+		@apply font-serif text-4xl font-bold;
+	}
+
+	h2 {
+		@apply font-sans text-2xl font-semibold;
+	}
+
+	h3 {
+		@apply font-sans text-lg font-normal;
+	}
+	</style>
