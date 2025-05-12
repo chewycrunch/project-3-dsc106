@@ -1,2 +1,53 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
+
+@theme {
+	--font-sans: DM Sans, sans-serif;
+	/* --font-mono: Geist Mono, monospace; */
+	--breakpoint-3xl: 112rem;
+
+	--color-background-1: #11141c; /* Primary bg, like main content bg */
+	--color-background-2: #0d0f17; /* Secondary bg, like modal bg, toaster */
+
+	--color-menu-1: #222222; /* Header */
+	--color-menu-2: #333333; /* Footer */
+	--color-menu-3: #1a1a1a; /* Sidebar */
+
+	--color-item-1: #16151a; /* Primary item, Big stuff like group items */
+	--color-item-2: #0d0f12; /* Text input, select menu, primary buttons (blueish hint), also accent bg (modal header footer) */
+	--color-item-4: #121212; /* Dropdown item color */
+	--color-field-disabled: #37393c; /* Disabled input field */
+
+	--color-border-hover: #454545;
+	--color-border-active: #878787;
+	--color-border-rest: #444444;
+
+	--color-button-hover: #1f1f1f;
+	--color-button-active: #292929;
+	--color-button-rest: #1a1a1a;
+
+	--color-text-primary: #ededed;
+	--color-text-secondary: #a1a1a1;
+	--color-text-disabled: #4b4c60;
+	--color-text-placeholder: #888890;
+
+	--color-oneoff-green: #66c454;
+	--color-oneoff-yellow: #f2be4f;
+	--color-oneoff-red: #ea6a5e;
+	--color-oneoff-extrablue: #6baed6;
+	--color-oneoff-neongreen: #04db84;
+}
+
+@layer utilities {
+	/* The html element */
+	:root {
+		@apply bg-background-1 text-text-primary;
+	}
+}
+
+@layer base {
+	@font-face {
+		font-family: 'DM Sans';
+		src: url('$lib/fonts/DMSans-VariableFont_opsz,wght.ttf') format('truetype');
+	}
+}
