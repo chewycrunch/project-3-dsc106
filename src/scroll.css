@@ -1,0 +1,33 @@
+/* Width */
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+/* Track (Scroll BG) */
+::-webkit-scrollbar-track {
+	background: #0e101b;
+	/* border-top-left-radius: 10px; */
+}
+
+/* Handle (Touch Part) */
+::-webkit-scrollbar-thumb {
+	background: #464857;
+	/* border-radius: 10px; */
+}
+
+::-webkit-scrollbar-button {
+	width: 0;
+	height: 0;
+	display: none;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+	background: #464857;
+	border-radius: 10px;
+}
+
+::-webkit-scrollbar-corner {
+	background: #fff;
+}
