@@ -20,14 +20,18 @@
 <style scoped>
 	@reference '$lib/../app.css';
 	h1 {
-		@apply font-serif text-4xl font-bold;
+		@apply font-serif text-4xl font-bold tracking-wide;
 	}
 
 	h2 {
-		@apply font-sans text-2xl font-semibold;
+		@apply font-serif text-2xl font-medium tracking-wide;
 	}
 
 	h3 {
-		@apply font-sans text-lg font-normal;
+		@apply font-serif text-lg font-normal;
+	}
+
+	p {
+		@apply font-sans text-base font-normal;
 	}
 	</style>
