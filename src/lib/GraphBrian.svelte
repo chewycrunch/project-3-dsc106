@@ -145,7 +145,7 @@
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Add light/dark period shading
+    // Add light/dark period shading first (bottom layer)
     for (let day = 0; day < 14; day++) {
       // Dark period (gray)
       g.append('rect')
@@ -166,7 +166,7 @@
         .attr('opacity', 0.1);
     }
 
-    // Add estrus day highlighting
+    // Add estrus day highlighting on top (top layer)
     [2, 6, 10].forEach(day => {
       g.append('rect')
         .attr('x', xScale(day))
@@ -174,7 +174,8 @@
         .attr('width', xScale(day + 1) - xScale(day))
         .attr('height', innerHeight)
         .attr('fill', 'red')
-        .attr('opacity', 0.2);
+        .attr('opacity', 0.2)
+        .raise(); // Ensure this rectangle is on top
     });
 
     // Create line generator with proper typing
@@ -297,20 +298,6 @@
 
 <div class="graph-container">
   <div class="main-content">
-    <div class="controls">
-      <button class="temp-toggle" on:click={toggleTempUnit}>
-        Switch to {useFahrenheit ? 'Celsius' : 'Fahrenheit'}
-      </button>
-      <select 
-        class="data-type-select" 
-        bind:value={dataType} 
-        on:change={() => updateDataType(dataType)}
-      >
-        <option value="female">Female Mice</option>
-        <option value="male">Male Mice</option>
-        <option value="both">All Mice</option>
-      </select>
-    </div>
     <svg bind:this={svg}></svg>
   </div>
   <div class="legend">
@@ -332,6 +319,20 @@
         <div class="legend-color" style="background-color: red; opacity: 0.2;"></div>
         <span>Estrus</span>
       </div>
+    </div>
+    <div class="controls">
+      <button class="temp-toggle" on:click={toggleTempUnit}>
+        Switch to {useFahrenheit ? 'Celsius' : 'Fahrenheit'}
+      </button>
+      <select 
+        class="data-type-select" 
+        bind:value={dataType} 
+        on:change={() => updateDataType(dataType)}
+      >
+        <option value="female">Female Mice</option>
+        <option value="male">Male Mice</option>
+        <option value="both">All Mice</option>
+      </select>
     </div>
   </div>
 </div>
@@ -357,22 +358,21 @@
   }
 
   .controls {
-    position: absolute;
-    top: 10px;
-    right: 10px;
+    margin-top: 20px;
     display: flex;
+    flex-direction: column;
     gap: 10px;
-    z-index: 1;
   }
 
   .temp-toggle {
-    padding: 5px 10px;
+    padding: 8px 12px;
     background-color: #1f77b4;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 14px;
+    width: 100%;
   }
 
   .temp-toggle:hover {
@@ -380,13 +380,14 @@
   }
 
   .data-type-select {
-    padding: 5px 10px;
+    padding: 8px 12px;
     background-color: white;
     border: 1px solid #1f77b4;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 14px;
     color: #1f77b4;
+    width: 100%;
   }
 
   .data-type-select:hover {
