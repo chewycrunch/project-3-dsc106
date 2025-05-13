@@ -6,6 +6,7 @@
 <!-- Title -->
 <div class="flex flex-col gap-x-2.5 mt-20">
 <h1>Mouse Data - Pulse of the Night</h1>
+<h2>How does the thermoregulation of mice differ with changes to gender, time of day, and estrus period?</h2>
 <h2>Dynamic visualization of mouse behavior, thermoregulation, and red-band estrus under 12h light/dark.</h2>
 <h3>Brian Can, David Chew, Derek Kuang, Aathi Muthu</h3>
 </div>
