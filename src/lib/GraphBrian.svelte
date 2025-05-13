@@ -79,7 +79,7 @@
 					const totalHours = (dNum - dayNum) * 24;
 					const hours = Math.floor(totalHours);
 					const minutes = Math.round((totalHours - hours) * 60);
-					return `Day ${dayNum + 1}, ${hours}:${minutes.toString().padStart(2, '0')}`;
+					return `Day ${dayNum}, ${hours}:${minutes.toString().padStart(2, '0')}`;
 				});
 		}
 		// Otherwise show days
@@ -87,7 +87,7 @@
 			return d3
 				.axisBottom(scale)
 				.ticks(6)
-				.tickFormat((d) => `Day ${Math.floor(Number(d) + 1)}`);
+				.tickFormat((d) => `Day ${Math.floor(Number(d))}`);
 		}
 	}
 
@@ -303,7 +303,7 @@
 
 				tooltip.transition().duration(200).style('opacity', 0.9);
 
-				const day = Math.floor(d.day) + 1;
+				const day = Math.floor(d.day);
 				const totalHours = (d.day - Math.floor(d.day)) * 24;
 				const hour = Math.floor(totalHours);
 				const minute = Math.round((totalHours - hour) * 60);
@@ -463,7 +463,7 @@
 				d3
 					.axisBottom(xScale)
 					.ticks(7)
-					.tickFormat((d) => `${Math.floor(Number(d))}`)
+					.tickFormat((d) => `Day ${Math.floor(Number(d))}`)
 			);
 
 		function brushed(event: d3.D3BrushEvent<unknown>) {
