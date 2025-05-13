@@ -16,7 +16,7 @@ temperature, and estrus cycles with minimal friction. A light/dark color scheme 
 the 12-hour on/off rhythm: light hues for "lights on" and dark shades for "lights off." Estrus days 
 are highlighted in red only when viewing female subjects (the estrus toggle is hidden for males and 
 disabled when "Both" sexes are selected). Users can switch body-temperature units between Fahrenheit 
-and Celsius. Users can also pan/zoom anywhere on the plot for a closer look.
+and Celsius. Users can also use the time slider at the bottom to zoom in on a specific time period of their interest to better examine detailed fluctuations in mouse activity, temperature variations, and estrus timing within the broader circadian cycle. 
 </p>
 
 <GraphBrian></GraphBrian>

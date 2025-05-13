@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import * as d3 from 'd3';
 
   // Component props
@@ -28,6 +28,7 @@
   let showEstrus = true;  // New state variable for estrus toggle
   let brush: d3.BrushBehavior<unknown>;
   let currentBrushSelection: [number, number] | null = null;
+  let tooltip: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
 
   // Temperature conversion functions
   function toFahrenheit(celsius: number): number {
@@ -280,18 +281,6 @@
       .style('font-weight', 'bold')
       .text(titleText);
 
-    // Add tooltip
-    const tooltip = d3.select('body')
-      .append('div')
-      .attr('class', 'mouse-tooltip')
-      .style('position', 'absolute')
-      .style('background-color', 'white')
-      .style('padding', '5px')
-      .style('border', '1px solid #ddd')
-      .style('border-radius', '3px')
-      .style('pointer-events', 'none')
-      .style('opacity', 0);
-
     // Add interactive dots for visible data
     vizGroup.selectAll('.dot')
       .data(visibleData)
@@ -348,11 +337,12 @@
     xAxisGroup.call(formatXAxis(xScale))
       .append('text')
       .attr('x', innerWidth / 2)
-      .attr('y', 40)
-      .attr('fill', 'currentColor')
+      .attr('y', 35)
+      .attr('fill', 'black')
       .attr('text-anchor', 'middle')
       .attr('font-size', '14px')
-      .text('Time');
+      .attr('font-weight', 'bold')
+      .text('Day');
 
     yAxisGroup.call(d3.axisLeft(yScale)
       .tickValues(tickValues)
@@ -361,9 +351,10 @@
       .attr('transform', 'rotate(-90)')
       .attr('x', -innerHeight / 2)
       .attr('y', -45)
-      .attr('fill', 'currentColor')
+      .attr('fill', 'black')
       .attr('text-anchor', 'middle')
       .attr('font-size', '14px')
+      .attr('font-weight', 'bold')
       .text(`Temperature (${getTempUnit()})`);
   }
 
@@ -499,10 +490,27 @@
   }
 
   onMount(async () => {
+    // Create tooltip once on initialization
+    tooltip = d3.select('body')
+      .append('div')
+      .attr('class', 'mouse-tooltip')
+      .style('position', 'absolute')
+      .style('background-color', 'white')
+      .style('padding', '8px')
+      .style('border', '1px solid #ddd')
+      .style('border-radius', '4px')
+      .style('pointer-events', 'none')
+      .style('opacity', 0)
+      .style('z-index', 10);
+      
     await loadAndProcessData();
-    
-    // Remove any lingering tooltips from previous renders
-    d3.selectAll('.mouse-tooltip').remove();
+  });
+  
+  onDestroy(() => {
+    // Clean up tooltip when component is destroyed
+    if (tooltip) {
+      tooltip.remove();
+    }
   });
 </script>
 
@@ -714,5 +722,18 @@
     stroke: #1f77b4;
     fill: #1f77b4;
     fill-opacity: 0.15;
+  }
+
+  :global(.mouse-tooltip) {
+    position: absolute;
+    pointer-events: none;
+    background-color: white;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-size: 12px;
+    line-height: 1.4;
+    z-index: 1000;
   }
 </style>
