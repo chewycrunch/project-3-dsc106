@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="./favicon.png" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		
+		<link href="./_app/immutable/assets/0.BZQgUXrE.css" rel="stylesheet">
+		<link href="./_app/immutable/assets/2.BQ8MKIqe.css" rel="stylesheet">
+		<link rel="modulepreload" href="./_app/immutable/entry/start.Cv147L8Z.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/Cyvg6jPB.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/Dp0JXMyc.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/CJoyj7y9.js">
+		<link rel="modulepreload" href="./_app/immutable/entry/app.73ID0lqF.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/CGdHkT2g.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/SND8OnFK.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/DBlY6N9e.js">
+		<link rel="modulepreload" href="./_app/immutable/nodes/0.TH9woxtG.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/C0igb99y.js">
+		<link rel="modulepreload" href="./_app/immutable/nodes/2.CXjc6rTq.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/wD52Wjwp.js"><!--[--><meta name="description" content="View your favorite basketball content."> <meta name="viewport" content="width=device-width, initial-scale=1"><!--]--><title>Mouse</title>
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents"><!--[--><!--[--><!----><main><div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 undefined"><!----><div class="flex flex-col gap-x-2.5 mt-20"><h1 class="svelte-421x7c">Mouse Data - Pulse of the Night</h1> <h2 class="svelte-421x7c">Dynamic visualization of mouse behavior, thermoregulation, and red-band estrus under 12h light/dark.</h2> <h3 class="svelte-421x7c">Brian Can, David Chew, Derek Kuang, Aathi Muthu</h3></div> <p class="text-justify my-6 leading-relaxed svelte-421x7c">Our visualization centers on three coordinated components that let users explore mouse activity, 
+temperature, and estrus cycles with minimal friction. A light/dark color scheme immediately communicates 
+the 12-hour on/off rhythm: light hues for "lights on" and dark shades for "lights off." Estrus days 
+are highlighted in red only when viewing female subjects (the estrus toggle is hidden for males and 
+disabled when "Both" sexes are selected). Users can switch body-temperature units between Fahrenheit 
+and Celsius. Users can also pan/zoom anywhere on the plot for a closer look.</p> <div class="graph-container svelte-1rf7l53"><div class="main-content svelte-1rf7l53"><svg class="svelte-1rf7l53"></svg> <svg class="brush-svg svelte-1rf7l53"></svg></div> <div class="legend svelte-1rf7l53"><h3 class="svelte-1rf7l53">Legend</h3> <div class="legend-items svelte-1rf7l53"><div class="legend-item svelte-1rf7l53"><div class="legend-color svelte-1rf7l53" style="background-color: #1f77b4;"></div> <span class="svelte-1rf7l53">Avg Core Body Temp</span></div> <div class="legend-item svelte-1rf7l53"><div class="legend-color svelte-1rf7l53" style="background-color: #F2F2F2; opacity: 1;"></div> <span class="svelte-1rf7l53">Lights Off</span></div> <div class="legend-item svelte-1rf7l53"><div class="legend-color svelte-1rf7l53" style="background-color: #FFFFEC; opacity: 1;"></div> <span class="svelte-1rf7l53">Lights On</span></div> <!--[--><div class="legend-item svelte-1rf7l53"><div class="legend-color estrus-color svelte-1rf7l53" style="background-color: #FCCFCE; opacity: 1;"></div> <span class="svelte-1rf7l53">Estrus</span></div><!--]--></div> <div class="controls svelte-1rf7l53"><button class="temp-toggle svelte-1rf7l53">Switch to Fahrenheit</button> <select class="data-type-select svelte-1rf7l53"><option value="female">Female Mice</option><option value="male">Male Mice</option><option value="both">All Mice</option></select> <button class="estrus-toggle svelte-1rf7l53">Hide Estrus Period</button> <button class="reset-zoom svelte-1rf7l53">Reset View</button></div></div></div><!----> <p class="text-justify my-6 leading-relaxed svelte-421x7c">We chose solid light/dark bands to make the 12-hour on/off cycle immediately legible (a blue-black gradient proved too subtle), overlaid semi-opaque red rectangles for estrus so users can instantly see how activity and temperature shift during those periods (and hide that control for males or “Both” to avoid dead-end toggles), and an explicit °F/°C switch that not only relabels the axis but dynamically rescales tick intervals. Free-form pan/zoom lets users dive into any anomaly, while the draggable range selector provides quick “overview + detail” highlighting of min/max values. Together, these encodings and interactions balance clarity and flexibility, letting users fluidly explore circadian rhythms without visual overload.</p> <p class="text-justify my-6 leading-relaxed svelte-421x7c">Our two-week development is included in a single GitHub repository. We started off with a group brainstorming session, then distributed tasks among the four of us: Brian implemented the D3 map of light/dark intervals, created the temperature-unit toggle and axis rescaling, Aathi built the gender and estrus filters, created the time-range selector and pan/zoom behavior. David and Derek fixed the styling and added the write up for the whole project. In total, we logged roughly 16 person-hours (about four each). Integrating the zoom and drag behaviors in D3 proved the biggest time sink—it took nearly two hours to nail smooth interactions without layout jank. Once those were stable, integrating the remaining controls and polishing the color scheme fell into place quickly.</p><!----><!----><!----></div><!----></main><!----><!--]--> <!--[!--><!--]--><!--]-->
+			
+			<script>
+				{
+					__sveltekit_p3n9ry = {
+						base: new URL(".", location).pathname.slice(0, -1),
+						assets: "/project-3-dsc106"
+					};
+
+					const element = document.currentScript.parentElement;
+
+					Promise.all([
+						import("./_app/immutable/entry/start.Cv147L8Z.js"),
+						import("./_app/immutable/entry/app.73ID0lqF.js")
+					]).then(([kit, app]) => {
+						kit.start(app, element, {
+							node_ids: [0, 2],
+							data: [null,null],
+							form: null,
+							error: null
+						});
+					});
+				}
+			</script>
+		</div>
+	</body>
+</html>
