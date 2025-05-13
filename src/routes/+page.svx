@@ -8,6 +8,8 @@
 <h1>Mouse Data - Pulse of the Night</h1>
 <h2>Dynamic visualization of mouse behavior, thermoregulation, and red-band estrus under 12h light/dark.</h2>
 <h3>Brian Can, David Chew, Derek Kuang, Aathi Muthu</h3>
+
+<span class='text-red-500 font-bold text-2xl'>DISCLAIMER: Data takes about 15 secs to load. Chart will not be visible until then.</span>
 </div>
 
 <p class="text-justify my-6 leading-relaxed">
