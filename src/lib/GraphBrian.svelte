@@ -67,16 +67,17 @@
     const domain = scale.domain();
     const range = domain[1] - domain[0];
     
-    // If selection is less than 1 day, show hours
+    // If selection is less than 1 day, show hours and minutes
     if (range <= 1) {
       return d3.axisBottom(scale)
         .ticks(6)
         .tickFormat(d => {
           const dNum = Number(d);
-          const totalHours = dNum * 24;
+          const dayNum = Math.floor(dNum);
+          const totalHours = (dNum - dayNum) * 24;
           const hours = Math.floor(totalHours);
           const minutes = Math.round((totalHours - hours) * 60);
-          return `${hours}:${minutes.toString().padStart(2, '0')}`;
+          return `Day ${dayNum + 1}, ${hours}:${minutes.toString().padStart(2, '0')}`;
         });
     } 
     // Otherwise show days
@@ -312,11 +313,12 @@
           .style('opacity', .9);
         
         const day = Math.floor(d.day) + 1;
-        const hour = Math.floor((d.day % 1) * 24);
-        const minute = Math.floor(((d.day % 1) * 24 % 1) * 60);
+        const totalHours = (d.day - Math.floor(d.day)) * 24;
+        const hour = Math.floor(totalHours);
+        const minute = Math.round((totalHours - hour) * 60);
         
         tooltip.html(
-          `Day ${day} - ${hour}:${minute.toString().padStart(2, '0')}<br/>
+          `Day ${day}, ${hour}:${minute.toString().padStart(2, '0')}<br/>
            Temperature: ${getDisplayTemp(d.avgTemp).toFixed(2)}${getTempUnit()}<br/>
            Period: ${d.light ? 'Lights Off' : 'Lights On'}`
           + (dataType === 'female' ? `<br/>Estrus: ${d.estrus ? 'Yes' : 'No'}` : '')
