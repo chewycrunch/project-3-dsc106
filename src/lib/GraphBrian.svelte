@@ -5,7 +5,7 @@
   // Component props
   export let width = 800;
   export let height = 400;
-  export let margin = { top: 40, right: 60, bottom: 40, left: 60 };
+  export let margin = { top: 40, right: 60, bottom: 50, left: 60 };
   export let brushHeight = 60; // Height for the brush component
 
   // Type definitions
@@ -273,9 +273,10 @@
     g.append('text')
       .attr('class', 'title')
       .attr('x', innerWidth / 2)
-      .attr('y', -10)
+      .attr('y', -15)
       .attr('text-anchor', 'middle')
       .style('font-size', '16px')
+      .style('font-weight', 'bold')
       .text(titleText);
 
     // Add tooltip
@@ -345,9 +346,10 @@
     xAxisGroup.call(formatXAxis(xScale))
       .append('text')
       .attr('x', innerWidth / 2)
-      .attr('y', 35)
+      .attr('y', 40)
       .attr('fill', 'currentColor')
       .attr('text-anchor', 'middle')
+      .attr('font-size', '14px')
       .text('Time');
 
     yAxisGroup.call(d3.axisLeft(yScale)
@@ -356,9 +358,10 @@
       .append('text')
       .attr('transform', 'rotate(-90)')
       .attr('x', -innerHeight / 2)
-      .attr('y', -40)
+      .attr('y', -45)
       .attr('fill', 'currentColor')
       .attr('text-anchor', 'middle')
+      .attr('font-size', '14px')
       .text(`Temperature (${getTempUnit()})`);
   }
 
@@ -457,9 +460,9 @@
 
     // Add x-axis
     g.append('g')
-      .attr('class', 'x-axis')
+      .attr('class', 'x-axis-brush')
       .attr('transform', `translate(0,${innerHeight})`)
-      .call(d3.axisBottom(xScale).ticks(7).tickFormat(d => `${d}`));
+      .call(d3.axisBottom(xScale).ticks(7).tickFormat(d => `${Math.floor(Number(d))}`));
 
     function brushed(event: d3.D3BrushEvent<unknown>) {
       if (!event.selection) {
