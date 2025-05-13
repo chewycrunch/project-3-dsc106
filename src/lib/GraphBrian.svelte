@@ -6,7 +6,6 @@
   export let width = 800;
   export let height = 400;
   export let margin = { top: 40, right: 60, bottom: 40, left: 60 };
-  export let brushHeight = 60; // Height for the brush component
 
   // Type definitions
   interface ProcessedDataPoint {
@@ -27,8 +26,6 @@
   let dataType: DataType = 'female';
   let showEstrus = true;  // New state variable for estrus toggle
   let zoom: d3.ZoomBehavior<SVGElement, unknown>;
-  let brush: d3.BrushBehavior<unknown>;
-  let currentBrushSelection: [number, number] | null = null;
 
   // Temperature conversion functions
   function toFahrenheit(celsius: number): number {
@@ -59,6 +56,8 @@
   // Toggle temperature unit
   function toggleTempUnit() {
     useFahrenheit = !useFahrenheit;
+    isBrushed = false;
+    selectedData = [];
     createVisualization();
     createBrushVisualization();
   }
@@ -150,16 +149,6 @@
     createBrushVisualization();
   }
 
-  // Update data type and reload
-  function updateDataType(newType: DataType) {
-    dataType = newType;
-    // Reset estrus toggle when switching to male or both
-    if (newType !== 'female') {
-      showEstrus = false;
-    }
-    loadAndProcessData();
-  }
-
   function createVisualization() {
     if (!processedData.length) return;
 
@@ -194,26 +183,13 @@
     const g = d3.select(svg)
       .attr('width', width)
       .attr('height', height)
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('preserveAspectRatio', 'xMidYMid meet')
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Define clip path that matches the axis lines
-    g.append('defs')
-      .append('clipPath')
-      .attr('id', 'chart-area')
-      .append('rect')
-      .attr('x', -1)
-      .attr('y', -1)
-      .attr('width', innerWidth + 2)
-      .attr('height', innerHeight + 2);
-
-    // Create a group for all visualization elements with clip path
-    const vizGroup = g.append('g')
-      .attr('class', 'visualization')
-      .attr('clip-path', 'url(#chart-area)');
-
     // Create background group for light/dark periods
-    const bgGroup = vizGroup.append('g')
+    const bgGroup = g.append('g')
       .attr('class', 'background');
 
     // Add light/dark period shading
@@ -239,7 +215,7 @@
 
     // Add estrus day highlighting only if enabled and female mice selected
     if (showEstrus && dataType === 'female') {
-      const estrusGroup = vizGroup.append('g')
+      const estrusGroup = g.append('g')
         .attr('class', 'estrus');
 
       [2, 6, 10].forEach(day => {
@@ -269,23 +245,17 @@
 
     // Add the temperature line
     vizGroup.append('path')
-      .datum(visibleData)
+      .datum(processedData)
       .attr('fill', 'none')
       .attr('stroke', '#1f77b4')
       .attr('stroke-width', 1.5)
       .attr('d', line);
 
     // Add title (outside of vizGroup)
-    const titleText = dataType === 'female' 
-      ? 'Average Core Body Temperature (Female Mice)' 
-      : dataType === 'male' 
-        ? 'Average Core Body Temperature (Male Mice)'
-        : 'Average Core Body Temperature (All Mice)';
-        
     g.append('text')
       .attr('class', 'title')
       .attr('x', innerWidth / 2)
-      .attr('y', -10)
+      .attr('y', -20)
       .attr('text-anchor', 'middle')
       .style('font-size', '16px')
       .text(titleText);
@@ -302,9 +272,9 @@
       .style('pointer-events', 'none')
       .style('opacity', 0);
 
-    // Add interactive dots for visible data
+    // Add interactive dots
     vizGroup.selectAll('.dot')
-      .data(visibleData)
+      .data(processedData)
       .enter()
       .append('circle')
       .attr('class', 'dot')
@@ -357,7 +327,7 @@
         const newYScale = event.transform.rescaleY(yScale);
 
         // Update the axes with new scales
-        xAxisGroup.call(formatXAxis(newXScale));
+        xAxisGroup.call(d3.axisBottom(newXScale));
         yAxisGroup.call(d3.axisLeft(newYScale)
           .tickValues(tickValues)
           .tickFormat(d => d.toString()));
@@ -380,7 +350,7 @@
           .curve(d3.curveMonotoneX);
 
         vizGroup.select('path')
-          .datum(visibleData)
+          .datum(processedData)
           .attr('d', newLine);
       });
 
@@ -397,13 +367,13 @@
       .attr('class', 'y-axis');
 
     // Initial axis rendering
-    xAxisGroup.call(formatXAxis(xScale))
+    xAxisGroup.call(d3.axisBottom(xScale))
       .append('text')
       .attr('x', innerWidth / 2)
       .attr('y', 35)
       .attr('fill', 'currentColor')
       .attr('text-anchor', 'middle')
-      .text('Time');
+      .text('Time (Days)');
 
     yAxisGroup.call(d3.axisLeft(yScale)
       .tickValues(tickValues)
@@ -417,137 +387,7 @@
       .text(`Temperature (${getTempUnit()})`);
   }
 
-  function createBrushVisualization() {
-    if (!processedData.length) return;
-
-    // Clear previous brush visualization
-    d3.select(brushSvg).selectAll("*").remove();
-
-    const innerWidth = width - margin.left - margin.right;
-    const brushMargin = { top: 5, right: margin.right, bottom: 20, left: margin.left };
-    const innerHeight = brushHeight - brushMargin.top - brushMargin.bottom;
-
-    // Create scales
-    const xScale = d3.scaleLinear()
-      .domain([0, 14]) // Full 14 days
-      .range([0, innerWidth]);
-
-    const yScale = d3.scaleLinear()
-      .domain(getYDomain())
-      .range([innerHeight, 0]);
-
-    // Create SVG group
-    const g = d3.select(brushSvg)
-      .attr('width', width)
-      .attr('height', brushHeight)
-      .append('g')
-      .attr('transform', `translate(${brushMargin.left},${brushMargin.top})`);
-
-    // Add background for context
-    for (let day = 0; day < 14; day++) {
-      // Dark period (gray)
-      g.append('rect')
-        .attr('x', xScale(day))
-        .attr('y', 0)
-        .attr('width', xScale(day + 0.5) - xScale(day))
-        .attr('height', innerHeight)
-        .attr('fill', '#F2F2F2')
-        .attr('opacity', 1);
-
-      // Light period (yellow)
-      g.append('rect')
-        .attr('x', xScale(day + 0.5))
-        .attr('y', 0)
-        .attr('width', xScale(day + 1) - xScale(day + 0.5))
-        .attr('height', innerHeight)
-        .attr('fill', '#FFFFEC')
-        .attr('opacity', 1);
-    }
-    
-    // Add estrus day highlighting to brush if needed
-    if (showEstrus && dataType === 'female') {
-      [2, 6, 10].forEach(day => {
-        g.append('rect')
-          .attr('x', xScale(day))
-          .attr('y', 0)
-          .attr('width', xScale(day + 1) - xScale(day))
-          .attr('height', innerHeight)
-          .attr('fill', '#ff5252')
-          .attr('opacity', 1)
-          .style('mix-blend-mode', 'multiply');
-      });
-    }
-
-    // Create line generator
-    const line = d3.line<ProcessedDataPoint>()
-      .x(d => xScale(d.day))
-      .y(d => yScale(getDisplayTemp(d.avgTemp)))
-      .curve(d3.curveMonotoneX);
-
-    // Add the temperature line
-    g.append('path')
-      .datum(processedData)
-      .attr('fill', 'none')
-      .attr('stroke', '#1f77b4')
-      .attr('stroke-width', 1)
-      .attr('d', line);
-
-    // Create brush
-    brush = d3.brushX()
-      .extent([[0, 0], [innerWidth, innerHeight]])
-      .on('end', brushed);
-
-    // Add the brush
-    const brushG = g.append('g')
-      .attr('class', 'brush')
-      .call(brush);
-
-    // If we have a previous selection, apply it
-    if (currentBrushSelection) {
-      brushG.call(brush.move, [
-        xScale(currentBrushSelection[0]), 
-        xScale(currentBrushSelection[1])
-      ]);
-    }
-
-    // Add x-axis
-    g.append('g')
-      .attr('class', 'x-axis')
-      .attr('transform', `translate(0,${innerHeight})`)
-      .call(d3.axisBottom(xScale).ticks(7).tickFormat(d => `${d}`));
-
-    function brushed(event: d3.D3BrushEvent<unknown>) {
-      if (!event.selection) {
-        // If the brush is cleared, reset to full view
-        currentBrushSelection = null;
-        createVisualization();
-        return;
-      }
-
-      // Convert the pixel selection to data values
-      const [x0, x1] = event.selection as [number, number];
-      const newDomain: [number, number] = [
-        xScale.invert(x0), 
-        xScale.invert(x1)
-      ];
-      
-      // Save current selection
-      currentBrushSelection = newDomain;
-      
-      // Update main visualization with new domain
-      createVisualization();
-    }
-  }
-
   function resetZoom() {
-    // Clear brush selection
-    currentBrushSelection = null;
-    
-    // Recreate both visualizations
-    createBrushVisualization();
-    createVisualization();
-    
-    // Also reset any zoom transforms
     d3.select(svg)
       .transition()
       .duration(750)
@@ -556,9 +396,6 @@
 
   onMount(async () => {
     await loadAndProcessData();
-    
-    // Remove any lingering tooltips from previous renders
-    d3.selectAll('.mouse-tooltip').remove();
   });
 </script>
 
@@ -608,14 +445,20 @@
         on:click={() => {
           if (dataType === 'female') {
             showEstrus = !showEstrus;
+            isBrushed = false;
+            selectedData = [];
             createVisualization();
           }
         }}
       >
         {showEstrus ? 'Hide' : 'Show'} Estrus Period
       </button>
-      <button class="reset-zoom" on:click={resetZoom}>
-        Reset View
+      <button 
+        class="reset-brush" 
+        class:disabled={!isBrushed}
+        on:click={resetBrush}
+      >
+        Reset Selection
       </button>
     </div>
   </div>
@@ -624,28 +467,24 @@
 <style>
   .graph-container {
     width: 100%;
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
     position: relative;
     display: flex;
     gap: 20px;
+    padding: 20px;
   }
 
   .main-content {
     flex: 1;
     position: relative;
-    display: flex;
-    flex-direction: column;
   }
   
   svg {
     width: 100%;
-    height: auto;
-    cursor: grab;
-  }
-
-  svg:active {
-    cursor: grabbing;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
   }
   
   .brush-svg {
@@ -688,6 +527,48 @@
 
   .data-type-select:hover {
     background-color: #f5f5f5;
+  }
+
+  .estrus-toggle {
+    padding: 8px 12px;
+    background-color: #1f77b4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    width: 100%;
+  }
+
+  .estrus-toggle:hover:not(.disabled) {
+    background-color: #1668a1;
+  }
+
+  .estrus-toggle.disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .reset-brush {
+    padding: 8px 12px;
+    background-color: #1f77b4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    width: 100%;
+  }
+
+  .reset-brush:hover:not(.disabled) {
+    background-color: #1668a1;
+  }
+
+  .reset-brush.disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 
   .legend {
@@ -733,41 +614,11 @@
     color: #555;
   }
 
-  .estrus-toggle {
-    padding: 8px 12px;
-    background-color: #1f77b4;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    width: 100%;
-  }
-
-  .estrus-toggle:hover:not(.disabled) {
-    background-color: #1668a1;
-  }
-
-  .estrus-toggle.disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
-
-  .reset-zoom {
-    padding: 8px 12px;
-    background-color: #1f77b4;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    width: 100%;
-    margin-top: 10px;
-  }
-
-  .reset-zoom:hover {
-    background-color: #1668a1;
+  :global(.brush .selection) {
+    fill: #1f77b4;
+    fill-opacity: 0.1;
+    stroke: #1f77b4;
+    stroke-width: 1px;
   }
   
   :global(.brush .selection) {
