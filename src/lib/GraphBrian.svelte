@@ -26,7 +26,6 @@
   let useFahrenheit = false;
   let dataType: DataType = 'female';
   let showEstrus = true;  // New state variable for estrus toggle
-  let zoom: d3.ZoomBehavior<SVGElement, unknown>;
   let brush: d3.BrushBehavior<unknown>;
   let currentBrushSelection: [number, number] | null = null;
 
@@ -197,20 +196,9 @@
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Define clip path that matches the axis lines
-    g.append('defs')
-      .append('clipPath')
-      .attr('id', 'chart-area')
-      .append('rect')
-      .attr('x', -1)
-      .attr('y', -1)
-      .attr('width', innerWidth + 2)
-      .attr('height', innerHeight + 2);
-
-    // Create a group for all visualization elements with clip path
+    // Create a group for the visualization
     const vizGroup = g.append('g')
-      .attr('class', 'visualization')
-      .attr('clip-path', 'url(#chart-area)');
+      .attr('class', 'visualization');
 
     // Create background group for light/dark periods
     const bgGroup = vizGroup.append('g')
@@ -224,17 +212,17 @@
         .attr('y', 0)
         .attr('width', xScale(Math.min(day + 0.5, xDomain[1])) - xScale(Math.max(day, xDomain[0])))
         .attr('height', innerHeight)
-        .attr('fill', 'gray')
-        .attr('opacity', 0.1);
-
+        .attr('fill', '#F2F2F2')
+        .attr('opacity', 1);
+				
       // Light period (yellow)
       bgGroup.append('rect')
         .attr('x', xScale(Math.max(day + 0.5, xDomain[0])))
         .attr('y', 0)
         .attr('width', xScale(Math.min(day + 1, xDomain[1])) - xScale(Math.max(day + 0.5, xDomain[0])))
         .attr('height', innerHeight)
-        .attr('fill', 'yellow')
-        .attr('opacity', 0.1);
+        .attr('fill', '#FFFFEC')
+        .attr('opacity', 1);
     }
 
     // Add estrus day highlighting only if enabled and female mice selected
@@ -345,50 +333,7 @@
           .style('opacity', 0);
       });
 
-    // Set up zoom behavior
-    zoom = d3.zoom<SVGElement, unknown>()
-      .scaleExtent([1, 10])
-      .on('zoom', (event) => {
-        // Update the visualization group transform
-        vizGroup.attr('transform', event.transform);
-
-        // Create new scales based on the zoom transform
-        const newXScale = event.transform.rescaleX(xScale);
-        const newYScale = event.transform.rescaleY(yScale);
-
-        // Update the axes with new scales
-        xAxisGroup.call(formatXAxis(newXScale));
-        yAxisGroup.call(d3.axisLeft(newYScale)
-          .tickValues(tickValues)
-          .tickFormat(d => d.toString()));
-
-        // Update the dots positions
-        vizGroup.selectAll('.dot')
-          .attr('cx', function(d) {
-            const data = d as ProcessedDataPoint;
-            return newXScale(data.day);
-          })
-          .attr('cy', function(d) {
-            const data = d as ProcessedDataPoint;
-            return newYScale(getDisplayTemp(data.avgTemp));
-          });
-
-        // Update the line
-        const newLine = d3.line<ProcessedDataPoint>()
-          .x(d => newXScale(d.day))
-          .y(d => newYScale(getDisplayTemp(d.avgTemp)))
-          .curve(d3.curveMonotoneX);
-
-        vizGroup.select('path')
-          .datum(visibleData)
-          .attr('d', newLine);
-      });
-
-    d3.select(svg)
-      .call(zoom)
-      .on('dblclick.zoom', null); // Disable double-click zoom
-
-    // Now create axis groups LAST so they are drawn on top
+    // Create axis groups
     const xAxisGroup = g.append('g')
       .attr('class', 'x-axis')
       .attr('transform', `translate(0,${innerHeight})`);
@@ -472,7 +417,7 @@
           .attr('y', 0)
           .attr('width', xScale(day + 1) - xScale(day))
           .attr('height', innerHeight)
-          .attr('fill', '#ff5252')
+          .attr('fill', '#FCCFCE')
           .attr('opacity', 1)
           .style('mix-blend-mode', 'multiply');
       });
@@ -539,19 +484,13 @@
     }
   }
 
-  function resetZoom() {
+  function resetView() {
     // Clear brush selection
     currentBrushSelection = null;
     
     // Recreate both visualizations
     createBrushVisualization();
     createVisualization();
-    
-    // Also reset any zoom transforms
-    d3.select(svg)
-      .transition()
-      .duration(750)
-      .call(zoom.transform, d3.zoomIdentity);
   }
 
   onMount(async () => {
@@ -575,11 +514,11 @@
         <span>Avg Core Body Temp</span>
       </div>
       <div class="legend-item">
-        <div class="legend-color" style="background-color: gray; opacity: 0.1;"></div>
+        <div class="legend-color" style="background-color: #F2F2F2; opacity: 1;"></div>
         <span>Lights Off</span>
       </div>
       <div class="legend-item">
-        <div class="legend-color" style="background-color: yellow; opacity: 0.1;"></div>
+        <div class="legend-color" style="background-color: #FFFFEC; opacity: 1;"></div>
         <span>Lights On</span>
       </div>
       {#if dataType === 'female'}
@@ -609,12 +548,13 @@
           if (dataType === 'female') {
             showEstrus = !showEstrus;
             createVisualization();
+            createBrushVisualization();
           }
         }}
       >
         {showEstrus ? 'Hide' : 'Show'} Estrus Period
       </button>
-      <button class="reset-zoom" on:click={resetZoom}>
+      <button class="reset-zoom" on:click={resetView}>
         Reset View
       </button>
     </div>
@@ -641,11 +581,6 @@
   svg {
     width: 100%;
     height: auto;
-    cursor: grab;
-  }
-
-  svg:active {
-    cursor: grabbing;
   }
   
   .brush-svg {
