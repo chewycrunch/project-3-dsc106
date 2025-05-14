@@ -14,6 +14,9 @@
 		light/dark.
 	</h2>
 	<h3>Brian Can, David Chew, Derek Kuang, Aathi Muthu</h3>
+	<span class="text-2xl font-bold text-red-500"
+		>DISCLAIMER: Data takes about 15 secs to load. Chart will not be visible until then.</span
+	>
 </div>
 
 <p class="my-6 text-justify leading-relaxed">
